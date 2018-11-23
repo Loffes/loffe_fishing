@@ -101,13 +101,13 @@ Citizen.CreateThread(function()
 						local this = 0
 						if extremefishingbait > 0 then
 							Wait(math.random(6000, 8500))
-							TriggerServerEvent('loffe_fishing:extreme')
+							TriggerServerEvent('loffe_fishing:bait', 'lEbait', 1)
 						elseif ultrafishingbait > 0 then
 							Wait(math.random(8500, 12000))
-							TriggerServerEvent('loffe_fishing:ultra')
+							TriggerServerEvent('loffe_fishing:bait', 'lUbait', 1)
 						elseif fishingbait > 0 then
 							Wait(math.random(12000, 17000))
-							TriggerServerEvent('loffe_fishing:bait')
+							TriggerServerEvent('loffe_fishing:bait', 'lbait', 1)
 						end
 						local randomThis = math.random(100, 350)
 						while not caught do
@@ -143,6 +143,73 @@ Citizen.CreateThread(function()
 			end
 		end
 	end
+end)
+
+RegisterNetEvent('loffe-fishing:boatFishing')
+AddEventHandler('loffe-fishing:boatFishing', function()
+    local coords = GetEntityCoords(GetPlayerPed(-1))
+        local closestvehicle = GetClosestVehicle(coords.x, coords.y, coords.z, 10.0, 0, 12294)
+        if not IsPedInAnyVehicle(GetPlayerPed(-1), true) and IsEntityInWater(closestvehicle) then
+                    
+                    local fishingrod = 0
+					local fishingbait = 0
+					local ultrafishingbait = 0
+					local extremefishingbait = 0
+
+                    ESX.TriggerServerCallback('loffe_fishing:getItems', function(fishingRod, fishingBait, ultrafishingBait, extremefishingBait)
+						fishingrod = fishingRod
+						fishingbait = fishingBait
+						ultrafishingbait = ultrafishingBait
+						extremefishingbait = extremefishingBait
+					end)
+                    Wait(500)
+                    if (fishingrod > 0 and fishingbait > 0) or (fishingrod > 0 and ultrafishingbait > 0) or (fishingrod > 0 and extremefishingbait > 0) then
+                    local ped = GetPlayerPed(-1)
+                    ClearPedTasks(ped)
+                    TaskStartScenarioInPlace(ped, "WORLD_HUMAN_STAND_FISHING", 0, false)
+                    local caught = false
+                    local this = 0
+                    	if extremefishingbait > 0 then
+							Wait(math.random(6000, 8500))
+							TriggerServerEvent('loffe_fishing:bait', 'lEbait', 1)
+						elseif ultrafishingbait > 0 then
+							Wait(math.random(8500, 12000))
+							TriggerServerEvent('loffe_fishing:bait', 'lUbait', 1)
+						elseif fishingbait > 0 then
+							Wait(math.random(12000, 17000))
+							TriggerServerEvent('loffe_fishing:bait', 'lbait', 1)
+						end
+                    local randomThis = math.random(100, 250)
+                    while not caught do
+                        Wait(5)
+                        local offset = GetOffsetFromEntityInWorldCoords(GetPlayerPed(-1), 0.0, 0.0, 1.0)
+                        DrawText3D(offset.x, offset.y, offset.z, _U('on_hook'), 0.6)
+                        this = this + 1
+                        if this == randomThis then
+                            caught = true
+                            local fishingRod = GetClosestObjectOfType(coords, 10.0, GetHashKey("prop_fishing_rod_01"), false, false, false)
+                            ClearPedTasks(ped)
+                            SetEntityAsMissionEntity(fishingRod, true, true)
+                            DeleteEntity(fishingRod)
+                            Notify(_U('got_away'), 2500)
+                        else
+                            if IsControlPressed(0, 18) --[[enter]] then
+                                local fishingRod = GetClosestObjectOfType(coords, 10.0, GetHashKey("prop_fishing_rod_01"), false, false, false)
+                                ClearPedTasks(ped)
+                                SetEntityAsMissionEntity(fishingRod, true, true)
+                                DeleteEntity(fishingRod)
+                                local randomWeight = math.random(5000, 14000)
+                                TriggerServerEvent('loffe_fishing:caught')
+                                caught = true
+                                Notify(_U('you_caught') .. randomWeight/1000 .. ' kg', 2000)
+                            end
+                        end
+                    end
+                        caught = false
+                    else
+                        Notify(_U('no_equipment'), 2500)
+                end
+        end
 end)
 
 Citizen.CreateThread(function()

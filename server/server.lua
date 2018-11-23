@@ -21,27 +21,23 @@ AddEventHandler('loffe_fishing:caught', function()
 end)
 
 RegisterServerEvent('loffe_fishing:bait')
-AddEventHandler('loffe_fishing:bait', function()
+AddEventHandler('loffe_fishing:bait', function(item, amount)
     local _source = source
     local xPlayer = ESX.GetPlayerFromId(_source)
 	
-	xPlayer.removeInventoryItem('lbait', 1)
+	xPlayer.removeInventoryItem(item, amount)
 end)
 
-RegisterServerEvent('loffe_fishing:ultra')
-AddEventHandler('loffe_fishing:ultra', function()
-    local _source = source
-    local xPlayer = ESX.GetPlayerFromId(_source)
-	
-	xPlayer.removeInventoryItem('lUbait', 1)
-end)
-
-RegisterServerEvent('loffe_fishing:extreme')
-AddEventHandler('loffe_fishing:extreme', function()
-    local _source = source
-    local xPlayer = ESX.GetPlayerFromId(_source)
-	
-	xPlayer.removeInventoryItem('lEbait', 1)
+ESX.RegisterUsableItem('lrod', function(source)
+    local xPlayer  = ESX.GetPlayerFromId(source)
+    local baitquantity = xPlayer.getInventoryItem('lbait').count
+    local ultrabaitquantity = xPlayer.getInventoryItem('lUbait').count
+    local extremebaitquantity = xPlayer.getInventoryItem('lEbait').count
+    if baitquantity > 0 or ultrabaitquantity > 0 or extremebaitquantity > 0 then
+        TriggerClientEvent('loffe-fishing:boatFishing', source)
+    else
+        TriggerClientEvent('esx:showNotification', source, _U('no_equipment'))
+    end
 end)
 
 RegisterServerEvent('loffe_fishing:sell')
@@ -51,7 +47,7 @@ AddEventHandler('loffe_fishing:sell', function()
 	local itemAmount = xPlayer.getInventoryItem('lfish').count
 	if itemAmount > 0 then
 		xPlayer.removeInventoryItem('lfish', itemAmount)
-		local price = itemAmount*math.random(30,40)
+		local price = itemAmount*math.random(Config.SellPrice)
 		xPlayer.addMoney(price)
 		TriggerClientEvent('loffe_fishing:notify', _source, _U('sold') .. price .. ':-')
 	end
@@ -63,7 +59,7 @@ AddEventHandler('loffe_fishing:buyEquipment', function(item, price, amount)
 	local xPlayer = ESX.GetPlayerFromId(_source)
 	local itemAmount = xPlayer.getInventoryItem(item).count
 	if(xPlayer.getMoney() >= price) then
-		if item == 'lrod' and itemAmount > 0 or item == 'lbait' and itemAmount >= 200 then
+		if (item == 'lrod' and itemAmount > 0) or (item == 'lbait' and itemAmount >= 200) or (item == 'lUbait' and itemAmount >= 200) or (item == 'lEbait' and itemAmount >= 200) then
 			TriggerClientEvent('loffe_fishing:notify', _source, _U('too_much'))
 		else
 			xPlayer.removeMoney(price)
