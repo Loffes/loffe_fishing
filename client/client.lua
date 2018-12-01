@@ -1,4 +1,4 @@
-ESX                           = nil
+ESX = nil
 
 Citizen.CreateThread(function()
 	while ESX == nil do
@@ -6,15 +6,6 @@ Citizen.CreateThread(function()
 		Citizen.Wait(0)
 	end
 end)
-
-local Config = {
-	StartFishing = '~w~[~g~E~w~] Start fishing',
-	FishOnHook = '~w~A fish hooked! press [~g~ENTER~w~] to reel it in',
-	GotAway = 'The fish got away!',
-	NoEquipment = 'You don\'t have a fishing rod',
-	OpenStore = '~w~[~g~E~w~] Buy fishing equipment',
-	SellFish = '~w~[~g~E~w~] Sell your fish'
-}
 
 local locations = { 
     { x = -1742.08, y = -1129.58, z = 12.17, h = 237.0}, 
@@ -24,17 +15,17 @@ local locations = {
 } 
 
 local store = { 
-    [Config.OpenStore] = { x = -1340.91, y = -1266.57, z = 4.05}, 
+    [_U('open_store')] = { x = -1340.91, y = -1266.57, z = 4.05}, 
 } 
 
 local sell = { 
-    [Config.SellFish] = { x = -1845.43, y = -1196.18, z = 18.33}, 
+    [_U('sell_fish')] = { x = -1845.43, y = -1196.18, z = 18.33}, 
 } 
 
 local blips = {
-	{title = 'Fishing', sprite = 68, x = -1741.82, y = -1129.24, z = 12.19},
-	{title = 'Sell fish', sprite = 356, x = -1845.41, y = -1196.15, z = 12.19},
-	{title = 'Fishing store', sprite = 52, x = -1340.91, y = -1266.57, z = 12.17},
+	{title = _U('fishing_blip'), sprite = 68, x = -1741.82, y = -1129.24, z = 12.19},
+	{title = _U('sell_fish_blip'), sprite = 356, x = -1845.41, y = -1196.15, z = 12.19},
+	{title = _U('store_blip'), sprite = 52, x = -1340.91, y = -1266.57, z = 12.17},
 }
 
 Citizen.CreateThread(function()
@@ -84,34 +75,45 @@ Citizen.CreateThread(function()
 	Citizen.Wait(5)
 	
 		local coords = GetEntityCoords(GetPlayerPed(-1))
+		
 		for k, v in pairs(locations) do
 			if GetDistanceBetweenCoords(coords, v.x, v.y, v.z, true) < 1.5 then
-				DrawText3D(v.x, v.y, v.z+0.9, Config.StartFishing, 0.80)
+				DrawText3D(v.x, v.y, v.z+0.9, _U('start'), 0.80)
 				if IsControlPressed(0, 38) then
 					local fishingrod = 0
 					local fishingbait = 0
-					ESX.TriggerServerCallback('loffe_fishing:getItems', function(fishingRod, fishingBait)
+					local ultrafishingbait = 0
+					local extremefishingbait = 0
+					
+					ESX.TriggerServerCallback('loffe_fishing:getItems', function(fishingRod, fishingBait, ultrafishingBait, extremefishingBait)
 						fishingrod = fishingRod
 						fishingbait = fishingBait
+						ultrafishingbait = ultrafishingBait
+						extremefishingbait = extremefishingBait
 					end)
 					Wait(500)
-					if fishingrod > 0 then
+					if (fishingrod > 0 and fishingbait > 0) or (fishingrod > 0 and ultrafishingbait > 0) or (fishingrod > 0 and extremefishingbait > 0) then
 						local ped = GetPlayerPed(-1)
 						ClearPedTasks(ped)
 						SetEntityHeading(ped, v.h)
 						TaskStartScenarioInPlace(ped, "WORLD_HUMAN_STAND_FISHING", 0, false)
 						local caught = false
 						local this = 0
-						if fishingbait > 0 then
-							Wait(math.random(3500,4500))
-						else
-							Wait(math.random(10000, 15000))
+						if extremefishingbait > 0 then
+							Wait(math.random(6000, 8500))
+							TriggerServerEvent('loffe_fishing:bait', 'lEbait', 1)
+						elseif ultrafishingbait > 0 then
+							Wait(math.random(8500, 12000))
+							TriggerServerEvent('loffe_fishing:bait', 'lUbait', 1)
+						elseif fishingbait > 0 then
+							Wait(math.random(12000, 17000))
+							TriggerServerEvent('loffe_fishing:bait', 'lbait', 1)
 						end
-						local randomThis = math.random(100, 250)
+						local randomThis = math.random(100, 350)
 						while not caught do
 							Wait(5)
 							local offset = GetOffsetFromEntityInWorldCoords(GetPlayerPed(-1), 0.0, 1.0, 0.5)
-							DrawText3D(offset.x, offset.y, offset.z, Config.FishOnHook, 0.8)
+							DrawText3D(offset.x, offset.y, offset.z, _U('on_hook'), 0.8)
 							this = this + 1
 							if this == randomThis then
 								caught = true
@@ -119,7 +121,7 @@ Citizen.CreateThread(function()
 								ClearPedTasks(ped)
 								SetEntityAsMissionEntity(fishingRod, true, true)
 								DeleteEntity(fishingRod)
-								Notify(Config.GotAway, 2500)
+								Notify(_U('got_away'), 2500)
 							else
 								if IsControlPressed(0, 18) --[[enter]] then
 									local fishingRod = GetClosestObjectOfType(coords, 10.0, GetHashKey("prop_fishing_rod_01"), false, false, false)
@@ -129,18 +131,85 @@ Citizen.CreateThread(function()
 									local randomWeight = math.random(5000, 14000)
 									TriggerServerEvent('loffe_fishing:caught')
 									caught = true
-									Notify('You caught a fish weighing ' .. randomWeight/1000 .. ' KG', 2000)
+									Notify(_U('you_caught') .. randomWeight/1000 .. ' kg', 2000)
 								end
 							end
 						end
 						caught = false
 					else
-						Notify(Config.NoEquipment, 2500)
+						Notify(_U('no_equipment'), 2500)
 					end
 				end
 			end
 		end
 	end
+end)
+
+RegisterNetEvent('loffe-fishing:boatFishing')
+AddEventHandler('loffe-fishing:boatFishing', function()
+    local coords = GetEntityCoords(GetPlayerPed(-1))
+        local closestvehicle = GetClosestVehicle(coords.x, coords.y, coords.z, 10.0, 0, 12294)
+        if not IsPedInAnyVehicle(GetPlayerPed(-1), true) and IsEntityInWater(closestvehicle) then
+                    
+                    local fishingrod = 0
+					local fishingbait = 0
+					local ultrafishingbait = 0
+					local extremefishingbait = 0
+
+                    ESX.TriggerServerCallback('loffe_fishing:getItems', function(fishingRod, fishingBait, ultrafishingBait, extremefishingBait)
+						fishingrod = fishingRod
+						fishingbait = fishingBait
+						ultrafishingbait = ultrafishingBait
+						extremefishingbait = extremefishingBait
+					end)
+                    Wait(500)
+                    if (fishingrod > 0 and fishingbait > 0) or (fishingrod > 0 and ultrafishingbait > 0) or (fishingrod > 0 and extremefishingbait > 0) then
+                    local ped = GetPlayerPed(-1)
+                    ClearPedTasks(ped)
+                    TaskStartScenarioInPlace(ped, "WORLD_HUMAN_STAND_FISHING", 0, false)
+                    local caught = false
+                    local this = 0
+                    	if extremefishingbait > 0 then
+							Wait(math.random(6000, 8500))
+							TriggerServerEvent('loffe_fishing:bait', 'lEbait', 1)
+						elseif ultrafishingbait > 0 then
+							Wait(math.random(8500, 12000))
+							TriggerServerEvent('loffe_fishing:bait', 'lUbait', 1)
+						elseif fishingbait > 0 then
+							Wait(math.random(12000, 17000))
+							TriggerServerEvent('loffe_fishing:bait', 'lbait', 1)
+						end
+                    local randomThis = math.random(100, 250)
+                    while not caught do
+                        Wait(5)
+                        local offset = GetOffsetFromEntityInWorldCoords(GetPlayerPed(-1), 0.0, 0.0, 1.0)
+                        DrawText3D(offset.x, offset.y, offset.z, _U('on_hook'), 0.6)
+                        this = this + 1
+                        if this == randomThis then
+                            caught = true
+                            local fishingRod = GetClosestObjectOfType(coords, 10.0, GetHashKey("prop_fishing_rod_01"), false, false, false)
+                            ClearPedTasks(ped)
+                            SetEntityAsMissionEntity(fishingRod, true, true)
+                            DeleteEntity(fishingRod)
+                            Notify(_U('got_away'), 2500)
+                        else
+                            if IsControlPressed(0, 18) --[[enter]] then
+                                local fishingRod = GetClosestObjectOfType(coords, 10.0, GetHashKey("prop_fishing_rod_01"), false, false, false)
+                                ClearPedTasks(ped)
+                                SetEntityAsMissionEntity(fishingRod, true, true)
+                                DeleteEntity(fishingRod)
+                                local randomWeight = math.random(5000, 14000)
+                                TriggerServerEvent('loffe_fishing:caught')
+                                caught = true
+                                Notify(_U('you_caught') .. randomWeight/1000 .. ' kg', 2000)
+                            end
+                        end
+                    end
+                        caught = false
+                    else
+                        Notify(_U('no_equipment'), 2500)
+                end
+        end
 end)
 
 Citizen.CreateThread(function()
@@ -183,11 +252,12 @@ function OpenFishMenu()
     ESX.UI.Menu.Open(
         'default', GetCurrentResourceName(), 'fish_menu',
         {
-            title    = 'Fishing store',
+            title    = _U('fishing_store'),
             elements = {
-				{label = 'Fishing rod [$1500]', item = 'loffe_rod', price = 1500, amount = 1},
-				{label = 'Fishing bait [$5]', item = 'loffe_fishingbait', price = 5, amount = 1},
-				{label = 'Fishing bait x 25 [$100]', item = 'loffe_fishingbait', price = 100, amount = 25},
+				{label = _U('fishing_rod'), item = 'lrod', price = 1500, amount = 1},
+				{label = _U('fishing_bait'), item = 'lbait', price = 5, amount = 1},
+				{label = _U('ultra_bait'), item = 'lUbait', price = 10, amount = 1},
+				{label = _U('extreme_bait'), item = 'lEbait', price = 15, amount = 1},
             }
         },
         function(data, menu)

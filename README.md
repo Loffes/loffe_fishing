@@ -1,5 +1,5 @@
 # loffe_fishing
-Simple fishing script
+Fishing script made by Loffe. This edition is made by LifeGoal!
 
 Requires [es_extended](https://github.com/ESX-Org/es_extended)
 
